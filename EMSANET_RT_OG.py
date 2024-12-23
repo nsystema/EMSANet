@@ -21,6 +21,7 @@ from Occupancy import OccupancyGrid
 
 # Bag file path
 BAG_FILE = "samples\d435i_sample_data\my_room_3.bag"
+LOOP = True
 
 # Dataset Configuration
 DATASET = 'sunrgbd'
@@ -315,7 +316,7 @@ def _get_args():
     return args
 
 
-def start_pipeline(bag_file=BAG_FILE):
+def start_pipeline(bag_file=BAG_FILE, loop=LOOP):
     """
     Initializes and starts the RealSense pipeline for reading from a bag file.
 
@@ -325,37 +326,37 @@ def start_pipeline(bag_file=BAG_FILE):
     Yields:
         tuple: A tuple containing the depth frame and color frame.
     """
-    while True:
-        # Initialize the RealSense pipeline
-        pipeline = rs.pipeline()
-        config = rs.config()
-        config.enable_device_from_file(bag_file, repeat_playback=True)
-        profile = pipeline.start(config)
-        align = rs.align(rs.stream.color)
 
-        try:
-            while True:
-                try:
-                    # Wait for the next set of frames
-                    frames = pipeline.wait_for_frames()
-                except RuntimeError:
-                    # Handle end of playback
-                    print("Playback ended. Restarting pipeline.")
-                    break
+    # Initialize the RealSense pipeline
+    pipeline = rs.pipeline()
+    config = rs.config()
+    config.enable_device_from_file(bag_file, repeat_playback=loop)
+    profile = pipeline.start(config)
+    align = rs.align(rs.stream.color)
 
-                # Align the frames to the color stream
-                aligned_frames = align.process(frames)
-                depth_frame = aligned_frames.get_depth_frame()
-                color_frame = aligned_frames.get_color_frame()
+    try:
+        while True:
+            try:
+                # Wait for the next set of frames
+                frames = pipeline.wait_for_frames()
+            except RuntimeError:
+                # Handle end of playback
+                print("Playback ended. Restarting pipeline.")
+                break
 
-                if not depth_frame or not color_frame:
-                    print("Could not acquire depth or color frames.")
-                    break
+            # Align the frames to the color stream
+            aligned_frames = align.process(frames)
+            depth_frame = aligned_frames.get_depth_frame()
+            color_frame = aligned_frames.get_color_frame()
 
-                yield depth_frame, color_frame
-        finally:
-            # Stop the pipeline to release resources
-            pipeline.stop()
+            if not depth_frame or not color_frame:
+                print("Could not acquire depth or color frames.")
+                break
+
+            yield depth_frame, color_frame
+    finally:
+        # Stop the pipeline to release resources
+        pipeline.stop()
 
 
 def _load_img_from_frame(frame, color=True):
