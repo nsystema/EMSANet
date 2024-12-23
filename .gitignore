@@ -127,3 +127,6 @@ visualized_outputs*
 
 # Datasets
 datasets/*
+
+# ignore files and folders in samples
+samples/d435i_sample_data/*
